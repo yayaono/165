@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>本地 LLM 對話</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+        .chat-container {
+            max-width: 700px;
+            margin: 50px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .chat-box {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .message {
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+        .user {
+            background-color: #d1e7ff;
+            text-align: right;
+        }
+        .ai {
+            background-color: #e2e3e5;
+            text-align: left;
+        }
+        textarea {
+            width: 100%;
+            height: 60px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-size: 14px;
+            resize: none;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>🗨️ 與 AI 對話</h2>
+        <div class="chat-box" id="chat-box"></div>
+        <textarea id="user-input" placeholder="輸入你的問題..."></textarea>
+        <button onclick="sendMessage()">送出</button>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+
+        function addMessage(content, sender) {
+            const msg = document.createElement("div");
+            msg.className = "message " + sender;
+            msg.textContent = content;
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const inputField = document.getElementById("user-input");
+            const userInput = inputField.value.trim();
+            if (!userInput) return;
+
+            addMessage(userInput, "user");
+            inputField.value = "";
+            addMessage("⏳ AI 正在思考...", "ai");
+
+            try {
+                const response = await fetch("http://203.145.202.92:5000/ask", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({question: userInput})
+                });
+                const data = await response.json();
+                
+                // 移除「AI 正在思考...」
+                const loading = document.querySelector(".ai:last-child");
+                loading.remove();
+                addMessage(data.answer || data.error, "ai");
+            } catch (error) {
+                const loading = document.querySelector(".ai:last-child");
+                loading.remove();
+                addMessage("❌ 發生錯誤：" + error, "ai");
+            }
+        }
+    </script>
+</body>
+</html>
